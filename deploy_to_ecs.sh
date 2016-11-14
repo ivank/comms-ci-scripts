@@ -13,7 +13,7 @@ Assumptions:
 
 The script builds container definitions by substituting placeholders
 in a template. The template can include the following placeholders:
-- @@SERVICE_NAME
+- @@VERSION
 - @@AWS_ACCOUNT_ID
 - @@ENV
 
@@ -78,7 +78,7 @@ configure_aws_cli(){
 make_container_definitions(){
   container_definitions=$(
     sed -e "
-      s/@@SERVICE_NAME/$service_name/g;
+      s/@@VERSION/$git_sha1/g;
       s/@@AWS_ACCOUNT_ID/$AWS_ACCOUNT_ID/g;
       s/@@ENV/$environment/g
     " $template
