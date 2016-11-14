@@ -107,7 +107,8 @@ await_stabilization() {
   # wait for older revisions to disappear
   interval=5
   attempts=$(( $timeout / $interval ))
-  for attempt in {1..$attempts}; do
+  for attempt in $(seq 1 $attempts); do
+    echo "Attempt $attempt of $attempts" 
     if stale=$(aws ecs describe-services --cluster "$cluster_name" --services "$service_name" | \
       $JQ ".services[0].deployments | .[] | select(.taskDefinition != \"$revisionArn\") | .taskDefinition")
     then
