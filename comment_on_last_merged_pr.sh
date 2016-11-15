@@ -46,11 +46,11 @@ post_comment() {
 }
 
 # Find the PR whose merge commit == the current HEAD
-gitOutput=$(curl -s $(api_url "pulls?state=closed&base=master&sort=updated&direction=desc"))
-echo $gitOutput
-if [[ $gitOutput == *"merge_commit_sha" ]]
+merged_pr_number=$(curl -s $(api_url "pulls?state=closed&base=master&sort=updated&direction=desc") | \
+  jq ".[] | select(.merge_commit_sha == \"$git_sha1\").number")
+
+if [ "$merged_pr_number" != "" ]
 then
-  $gitOutput | jq ".[] | select(.merge_commit_sha == \"$git_sha1\").number"
   echo "Looks like this was a merge commit for PR #$merged_pr_number. Leaving a comment on the PR."
   post_comment
 else
