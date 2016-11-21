@@ -93,10 +93,10 @@ get_task_role_arn() {
 }
 
 register_task_definition() {
-  aws_cmd=aws ecs register-task-definition --container-definitions "$container_definitions" --family "$task_family"
+  aws_cmd="aws ecs register-task-definition --container-definitions \"$container_definitions\" --family \"$task_family\""
   if [ ! -z "$taskRoleArn" -a "$taskRoleArn" != "null" ]; then 
     # If the currently deployed task has an associated role, make sure to preserve it
-    aws_cmd=$aws_cmd --task-role-arn "$taskRoleArn"
+    aws_cmd="$aws_cmd --task-role-arn \"$taskRoleArn\""
   fi
   if revisionArn=$($aws_cmd | $JQ '.taskDefinition.taskDefinitionArn'); then
     echo "Revision: $revisionArn"
