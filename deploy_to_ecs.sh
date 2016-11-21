@@ -93,12 +93,13 @@ get_task_role_arn() {
 }
 
 register_task_definition() {
-  aws_cmd="aws ecs register-task-definition --container-definitions \"$container_definitions\" --family \"$task_family\""
   if [ ! -z "$taskRoleArn" -a "$taskRoleArn" != "null" ]; then 
     # If the currently deployed task has an associated role, make sure to preserve it
-    aws_cmd="$aws_cmd --task-role-arn \"$taskRoleArn\""
+    cmd_output=$(aws ecs register-task-definition --container-definitions "$container_definitions" --family "$task_family" --task-role-arn "$taskRoleArn")
+  else
+    cmd_output=$(aws ecs register-task-definition --container-definitions "$container_definitions" --family "$task_family")
   fi
-  if revisionArn=$($aws_cmd | $JQ '.taskDefinition.taskDefinitionArn'); then
+  if revisionArn=$(echo $cmd_output | $JQ '.taskDefinition.taskDefinitionArn'); then
     echo "Revision: $revisionArn"
   else
     echo "Failed to register task definition"
