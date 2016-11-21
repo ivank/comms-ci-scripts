@@ -8,8 +8,10 @@ Based on https://github.com/circleci/go-ecs-ecr/blob/master/deploy.sh
 
 Assumptions:
 - The task definition contains only one container
-- Task family name == service name == container name
+- Service name == container name
+- Family name = $service_name-$environment, e.g. "composer-UAT"
 - The Docker image has already been published
+- The service already exists
 
 The script builds container definitions by substituting placeholders
 in a template. The template can include the following placeholders:
@@ -56,7 +58,7 @@ template_path=${2?"Container definitions template file must be specified"}
 timeout=${custom_timeout:-"180"}
 cluster_name=${custom_cluster_name:-"ecs-cluster-$environment"}
 service_name=${custom_service_name:-"$CIRCLE_PROJECT_REPONAME"}
-task_family=$service_name
+task_family="$service_name-$environment"
 
 git_sha1="${CIRCLE_SHA1:-$(git rev-parse HEAD)}"
 region=${AWS_REGION:-"eu-west-1"}
@@ -75,7 +77,7 @@ configure_aws_cli(){
   aws configure set default.output json
 }
 
-make_container_definitions(){
+make_container_definitions() {
   container_definitions=$(
     sed -e "
       s/@@VERSION/$git_sha1/g;
@@ -85,8 +87,18 @@ make_container_definitions(){
   ) 
 }
 
+get_task_role_arn() {
+  currentTaskDefinitionArn=$(aws ecs describe-services --cluster "$cluster_name" --services "$service_name" | $JQ '.services[0].taskDefinition')
+  taskRoleArn=$(aws ecs describe-task-definition --task-definition "$currentTaskDefinitionArn" | $JQ '.taskDefinition.taskRoleArn')
+}
+
 register_task_definition() {
-  if revisionArn=$(aws ecs register-task-definition --container-definitions "$container_definitions" --family "$task_family" | $JQ '.taskDefinition.taskDefinitionArn'); then
+  aws_cmd=aws ecs register-task-definition --container-definitions "$container_definitions" --family "$task_family"
+  if [ ! -z "$taskRoleArn" -a "$taskRoleArn" != "null" ]; then 
+    # If the currently deployed task has an associated role, make sure to preserve it
+    aws_cmd=$aws_cmd --task-role-arn "$taskRoleArn"
+  fi
+  if revisionArn=$($aws_cmd | $JQ '.taskDefinition.taskDefinitionArn'); then
     echo "Revision: $revisionArn"
   else
     echo "Failed to register task definition"
@@ -125,10 +137,11 @@ await_stabilization() {
 }
 
 deploy_to_ecs() {
-    make_container_definitions
-    register_task_definition
-    update_service
-    await_stabilization
+  get_task_role_arn
+  make_container_definitions
+  register_task_definition
+  update_service
+  await_stabilization
 }
 
 configure_aws_cli
