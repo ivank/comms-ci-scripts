@@ -29,6 +29,7 @@ Arguments:
 COMMENT
 
 set -e
+set -x
 
 usage() {
   echo "deploy_to_ecs.sh [-s service name] [-c cluster name] -t [timeout in seconds] <environment> <template>" >&2
@@ -69,7 +70,7 @@ template=$basedir/$template_path
 echo "Deploying version $git_sha1 to ECS in $environment environment."
 
 # more bash-friendly output for jq
-JQ="jq --raw-output --exit-status"
+JQ="jq --raw-output "
 
 configure_aws_cli(){
   aws --version
