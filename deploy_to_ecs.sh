@@ -70,7 +70,7 @@ template=$basedir/$template_path
 echo "Deploying version $git_sha1 to ECS in $environment environment."
 
 # more bash-friendly output for jq
-JQ="jq --raw-output "
+JQ="jq --raw-output --exit-status"
 
 configure_aws_cli(){
   aws --version
@@ -90,7 +90,7 @@ make_container_definitions() {
 
 get_task_role_arn() {
   currentTaskDefinitionArn=$(aws ecs describe-services --cluster "$cluster_name" --services "$service_name" | $JQ '.services[0].taskDefinition')
-  taskRoleArn=$(aws ecs describe-task-definition --task-definition "$currentTaskDefinitionArn" | $JQ '.taskDefinition.taskRoleArn')
+  taskRoleArn=$(aws ecs describe-task-definition --task-definition "$currentTaskDefinitionArn" | jq --raw-output '.taskDefinition.taskRoleArn')
 }
 
 register_task_definition() {
