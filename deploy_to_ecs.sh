@@ -29,7 +29,6 @@ Arguments:
 COMMENT
 
 set -e
-set -x
 
 usage() {
   echo "deploy_to_ecs.sh [-s service name] [-c cluster name] -t [timeout in seconds] <environment> <template>" >&2
