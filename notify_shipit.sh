@@ -43,7 +43,7 @@ api_url() {
 }
 
 notify_shipit() {
-  if [ "$merged_pr_number" == "" ]
+  if [ "$merged_pr_number" == "" ]; then
     curl -s -X POST "https://shipit.ovo-comms.co.uk/deployments?apikey=$shipit_key" \
       -d "team=$team" \
       -d "service=$service" \
