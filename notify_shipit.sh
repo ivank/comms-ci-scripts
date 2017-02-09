@@ -51,7 +51,7 @@ notify_shipit() {
       -d "links[0].title=CircleCI build" \
       -d "links[0].url=$build_url"
   else
-    curl -s -X POST "https://shipit.ovo-comms.co.uk/deployments?apikey=$shipit_key" \
+    curl -s -X POST "https://shipit.ovotech.org.uk/deployments?apikey=$shipit_key" \
       -d "team=$team" \
       -d "service=$service" \
       -d "buildId=$build_num" \
