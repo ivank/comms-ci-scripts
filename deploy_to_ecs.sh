@@ -68,14 +68,8 @@ template=$basedir/$template_path
 
 echo "Deploying version $git_sha1 to ECS in $environment environment."
 
-# more bash-friendly output for jq
 JQ="jq --raw-output --exit-status"
-
-configure_aws_cli(){
-  aws --version
-  aws configure set default.region $region
-  aws configure set default.output json
-}
+AWS="aws --region $region"
 
 make_container_definitions() {
   container_definitions=$(
@@ -88,16 +82,16 @@ make_container_definitions() {
 }
 
 get_task_role_arn() {
-  currentTaskDefinitionArn=$(aws ecs describe-services --cluster "$cluster_name" --services "$service_name" | $JQ '.services[0].taskDefinition')
-  taskRoleArn=$(aws ecs describe-task-definition --task-definition "$currentTaskDefinitionArn" | jq --raw-output '.taskDefinition.taskRoleArn')
+  currentTaskDefinitionArn=$($AWS ecs describe-services --cluster "$cluster_name" --services "$service_name" | $JQ '.services[0].taskDefinition')
+  taskRoleArn=$($AWS ecs describe-task-definition --task-definition "$currentTaskDefinitionArn" | jq --raw-output '.taskDefinition.taskRoleArn')
 }
 
 register_task_definition() {
   if [ ! -z "$taskRoleArn" -a "$taskRoleArn" != "null" ]; then 
     # If the currently deployed task has an associated role, make sure to preserve it
-    cmd_output=$(aws ecs register-task-definition --container-definitions "$container_definitions" --family "$task_family" --task-role-arn "$taskRoleArn")
+    cmd_output=$($AWS ecs register-task-definition --container-definitions "$container_definitions" --family "$task_family" --task-role-arn "$taskRoleArn")
   else
-    cmd_output=$(aws ecs register-task-definition --container-definitions "$container_definitions" --family "$task_family")
+    cmd_output=$($AWS ecs register-task-definition --container-definitions "$container_definitions" --family "$task_family")
   fi
   if revisionArn=$(echo $cmd_output | $JQ '.taskDefinition.taskDefinitionArn'); then
     echo "Revision: $revisionArn"
@@ -108,7 +102,7 @@ register_task_definition() {
 }
 
 update_service() {
-  if [[ $(aws ecs update-service --cluster "$cluster_name" --service "$service_name" --task-definition "$revisionArn" | \
+  if [[ $($AWS ecs update-service --cluster "$cluster_name" --service "$service_name" --task-definition "$revisionArn" | \
     $JQ '.service.taskDefinition') != "$revisionArn" ]]
   then
     echo "Error updating service."
@@ -122,7 +116,7 @@ await_stabilization() {
   attempts=$(( $timeout / $interval ))
   for attempt in $(seq 1 $attempts); do
     echo "Attempt $attempt of $attempts" 
-    if stale=$(aws ecs describe-services --cluster "$cluster_name" --services "$service_name" | \
+    if stale=$($AWS ecs describe-services --cluster "$cluster_name" --services "$service_name" | \
       $JQ ".services[0].deployments | .[] | select(.taskDefinition != \"$revisionArn\") | .taskDefinition")
     then
       echo "Waiting for stale deployments:"
@@ -145,5 +139,4 @@ deploy_to_ecs() {
   await_stabilization
 }
 
-configure_aws_cli
 deploy_to_ecs
