@@ -56,9 +56,10 @@ shift "$((OPTIND-1))"
 environment=${1?"Environment must be specified"}
 template_path=${2?"Container definitions template file must be specified"}
 timeout=${custom_timeout:-"180"}
-cluster_name=${custom_cluster_name:-"ecs-cluster-$environment"}
+cluster_version=v2
+cluster_name=${custom_cluster_name:-"ecs-cluster-$environment$cluster_version"}
 service_name=${custom_service_name:-"$CIRCLE_PROJECT_REPONAME"}
-task_family="$service_name-$environment"
+task_family="$service_name-$environment$cluster_version"
 
 git_sha1="${CIRCLE_SHA1:-$(git rev-parse HEAD)}"
 region=${AWS_REGION:-"eu-west-1"}
