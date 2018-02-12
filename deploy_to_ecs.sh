@@ -59,7 +59,7 @@ timeout=${custom_timeout:-"180"}
 cluster_version=v2
 cluster_name=${custom_cluster_name:-"ecs-cluster-$environment$cluster_version"}
 service_name=${custom_service_name:-"$CIRCLE_PROJECT_REPONAME"}
-task_family="$service_name-$environment$cluster_version"
+task_family="$service_name-$environment"
 
 git_sha1="${CIRCLE_SHA1:-$(git rev-parse HEAD)}"
 region=${AWS_REGION:-"eu-west-1"}
