@@ -10,21 +10,22 @@ Required environment variables:
 
 Arguments:
   $1 = environment (e.g. UAT)
+  $2 = lambda function name (defaults to the CIRCLE_PROJECT_REPONAME if unset)
 COMMENT
 
 set -e
-
-environment=${1:-Environment must be passed as second argument}
 
 build_num=${CIRCLE_BUILD_NUM?"Build number is not set. Am I running in CircleCI?"}
 repo=${CIRCLE_PROJECT_REPONAME?"Repo name is not set. Am I running in CircleCI?"}
 region=${AWS_REGION:-"eu-west-1"}
 
+environment=${1:-Environment must be passed as second argument}
+function_name=${2:-$repo}
+
 basedir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.."
 artifact=$basedir/target/scala-2.*/*-assembly-*.jar
 
-lambda_name="$repo"
-function_name="${lambda_name}-$environment"
+environment_function_name="${function_name}-${environment}"
 zipfile_name=lambda.zip
 
 s3_bucket=ovo-comms-platform-lambdas
@@ -37,6 +38,6 @@ aws --region "$region" \
 # Update the Lambda to point to the new artifact
 aws --region "$region" \
   lambda update-function-code \
-  --function-name "$function_name" \
+  --function-name "$environment_function_name" \
   --s3-bucket "$s3_bucket" \
   --s3-key "$s3_key"
